@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/theme/dracula.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>PROYECTO 2</h1>
+    <div id="tab-buttons"></div>
+    <div id="tab-contents"></div>
+
+    <!-- Controles para añadir pestañas, cargar archivo e interpretar -->
+    <div id="controls">
+        <button id="add-tab">Agregar Pestaña</button>
+        <button id="load-file-btn">Cargar Archivo</button>
+        <input id="load-file-input" type="file">
+        <button id="Interpretar">Interpretar</button>
+    </div>
+
+    <div id="Consola">
+        <textarea id="console-textarea"></textarea>
+      </div>    
+
+      <pre id="ast"></pre>
+      <pre id="errores"></pre>
+    
+    <!-- Scripts de CodeMirror -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/mode/javascript/javascript.min.js"></script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
