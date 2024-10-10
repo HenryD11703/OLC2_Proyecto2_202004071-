@@ -1,5 +1,6 @@
 
 import { registers as reg } from "./constantes.js";
+import { stringArray } from "./utils.js";
 
 class Instruction {
     constructor(instruction, rd, rs1, rs2) {
@@ -21,6 +22,8 @@ class Instruction {
 export class Generator {
     constructor() {
         this.instructions = [];
+        this.stack = []; // stack for the objects
+        this.depth = 0; // depth of the stack
     }
     add(rd, rs1, rs2) {
         this.instructions.push(new Instruction('add', rd, rs1, rs2));
@@ -57,6 +60,10 @@ export class Generator {
     push(rd = reg.T0) {
         this.addi(reg.SP, reg.SP, -4); // Decrement stack pointer, 4 bytes equal to 32 bits
         this.sw(rd, reg.SP);
+    }
+
+    rem(rd, rs1, rs2) {
+        this.instructions.push(new Instruction('rem', rd, rs1, rs2));
     }
 
     pop(rd = reg.T0) {
@@ -104,6 +111,37 @@ export class Generator {
 
     comment(text) {
         this.instructions.push(new Instruction(`# ${text}`));
+    }
+
+    pushConstant(value) {
+        let length = 0;
+
+        switch (value.type) {
+            case 'int':
+                this.li(reg.T0, value.value);
+                this.push();
+                length = 4;
+                break;
+
+            case 'string':
+                const stringArray = stringArray(value.value);
+                this.comment(`Pushing string "${value.value}"`);
+                this.addi(reg.T0, reg.T6, 4); // T0 = T6 + 4
+                this.push(reg.T0); // Push the address of the string
+                this.comment(`String address`);
+                stringArray.forEach(block => {
+                    this.li(reg.T0, block);
+                    this.addi(reg.T6, reg.T6, 4); // T6 = T6 + 4
+                    this.sw(reg.T0, reg.T6); // Store the block of the string
+                });
+
+                length = 4;
+                break
+
+            default:
+                break;
+        }
+        this.pushObject({ type: value.type, length });
     }
 
     toString() {

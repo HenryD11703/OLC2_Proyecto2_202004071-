@@ -12,7 +12,7 @@ export class CompilerVisitor extends BaseVisitor {
      * @type {BaseVisitor['visitStatement']}
      */
     visitStatement(node) {
-        node.exp.accept(this);
+        node.exp.accept(this);  
     }
 
     /**
