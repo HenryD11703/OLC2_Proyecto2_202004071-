@@ -25,7 +25,21 @@ export class Generator {
         this.stack = []; // stack for the objects
         this.depth = 0; // depth of the stack
         this._builtInFunctions = new Set();
+        this._labels = 0;
     }
+
+    getLabel() { // el label es como un bloque que se utiliza para los saltos y funciones
+        return `L${this._labels++}`;
+    }
+
+    addLabel(label) {
+        label = label || this.getLabel();
+        this.instructions.push(new Instruction(`${label}:`));
+        return label;
+    }
+
+
+
     add(rd, rs1, rs2) { // sumar dos registros, que ya esten en el stack
         this.instructions.push(new Instruction('add', rd, rs1, rs2));
     }
@@ -338,6 +352,25 @@ export class Generator {
         this.instructions.push(new Instruction(`# ${text}`));
     }
 
+    /*
+    pushConstant, esta es una funcion que se encarga de guardar un objeto en el stack
+    a diferencia de push, pushConstant guarda un objeto con tipo y valor, y dependiendo del tipo
+    se guarda de una manera distinta, esto por la cantidad de bytes que se guardan en el stack
+    y por lo que se guarda en el stack
+
+    los enteros, se usa li para cargar el valor en un registro, luego se usa push que este 
+    tiene addi para decrementar el stack pointer y sw para guardar el valor en memoria
+
+    los strings, se crea un array de bytes con la funcion stringToBytes, luego se guarda la direccion
+    de memoria en el stack, luego se guarda cada byte en la direccion de memoria que se guardo en el stack
+    y se incrementa la direccion de memoria, esto se hace para guardar el string en memoria
+
+    los booleanos, se guarda un 1 si es true y un 0 si es false, se usa li para cargar el valor en un registro
+    luego se usa push que este tiene addi para decrementar el stack pointer y sw para guardar el valor en memoria
+
+    basicamente se guarda el valor en un registro, se guarda en el stack y se guarda en memoria, y en el stack (el array de objetos) 
+    se guarda el tipo, la longitud y la profundidad del objeto
+    */
     pushConstant(object) {
         let length = 0;
 
@@ -350,11 +383,11 @@ export class Generator {
 
             case 'string':
                 const stringArray = stringToBytes(object.value);
-                this.push(reg.T6); // Save the address of the string
+                this.push(reg.HP); // Save the address of the string
                 stringArray.forEach(byte => {
                     this.li(reg.T0, byte);
-                    this.sb(reg.T0, reg.T6);
-                    this.addi(reg.T6, reg.T6, 1);
+                    this.sb(reg.T0, reg.HP);
+                    this.addi(reg.HP, reg.HP, 1);
                 });
                 length = 4;
                 break

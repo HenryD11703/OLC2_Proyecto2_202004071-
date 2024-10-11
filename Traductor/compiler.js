@@ -13,26 +13,48 @@ export class CompilerVisitor extends BaseVisitor {
      */
     visitStatement(node) {
         node.exp.accept(this);  
+        this.code.popObject(reg.T0);
     }
 
     /**
      * @type {BaseVisitor['visitNativo']}
      */
     visitNativo(node) {
-        // verificar si es un un numero entero, decimal, booleano, string o caracter
-        if (node.tipo === 'int') {
-            this.code.li(reg.T0, node.valor);
-        } else if (node.tipo === 'float') {
-            // hacer lo que se haga para los flotantes
-        }
-
-        this.code.push(reg.T0);
+        this.code.comment(`Nativo ${node.valor}`);
+        this.code.comment(`Tipo ${node.tipo}`);
+        // a la hora de hacer el push constant siempre se manejara el objeto con tipo y valor
+        this.code.pushConstant({ tipo: node.tipo, valor: node.valor });
     }
 
     /**
      * @type {BaseVisitor['visitOperacionBinaria']}
      */
     visitOperacionBinaria(node) {
+
+        if (node.op === '&&') {
+            node.izq.accept(this); // interpretar la expresion izquierda
+            this.code.popObject(reg.T0); // obtener el valor de la expresion izquierda
+
+            const falseLabel = this.code.getLabel();
+            const endLabel = this.code.getLabel();
+
+            this.code.beq(reg.T0, reg.ZERO, falseLabel); // si es falso ir a la etiqueta falseLabel
+
+            node.der.accept(this); // interpretar la expresion derecha
+            this.code.popObject(reg.T0); // obtener el valor de la expresion derecha
+
+            this.code.beq(reg.T0, reg.ZERO, falseLabel); // si es falso ir a la etiqueta falseLabel
+
+            this.code.li(reg.T0, 1); // si llega hasta aqui es verdadero
+            this.code.push(reg.T0); // push 1 en el stack
+            this.code.j(endLabel); // ir a la etiqueta endLabel
+            this.code.addLabel(falseLabel); // agregar la etiqueta falseLabel
+            this.code.li(reg.T0, 0); // si llega hasta aqui es falso
+            this.code.push(reg.T0); // push 0 en el stack
+            this.code.addLabel(endLabel); // agregar la etiqueta endLabel
+            this.code.pushObject({ tipo: 'boolen', length: 4 }); // push el objeto booleano en el stack
+        }
+
         this.code.comment(`Operacion ${node.op}`);
         node.izq.accept(this);
         node.der.accept(this);
