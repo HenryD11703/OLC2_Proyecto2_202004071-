@@ -22,7 +22,17 @@ export const stringArray = (string) => { // String to 32 bit array
     } else {
         result.push(0); // Null terminated string
     }
-
     return result;
+}
 
+export const stringToBytes = (string) => { // String to 1 byte array
+    const result = [];
+    let elementIndex = 0;
+
+    while (elementIndex < string.length) {
+        result.push(string.charCodeAt(elementIndex));
+        elementIndex++;
+    }
+    result.push(0); // Null terminated string
+    return result;
 }
