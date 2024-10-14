@@ -22,7 +22,7 @@ class Instruction {
 export class Generator {
     constructor() {
         this.instructions = [];
-        this.stack = []; // stack for the objects
+        this.objectStack = []; // stack for the objects
         this.depth = 0; // depth of the stack
         this._builtInFunctions = new Set();
         this._labels = 0;
@@ -354,35 +354,21 @@ export class Generator {
 
     /*
     pushConstant, esta es una funcion que se encarga de guardar un objeto en el stack
-    a diferencia de push, pushConstant guarda un objeto con tipo y valor, y dependiendo del tipo
-    se guarda de una manera distinta, esto por la cantidad de bytes que se guardan en el stack
-    y por lo que se guarda en el stack
-
-    los enteros, se usa li para cargar el valor en un registro, luego se usa push que este 
-    tiene addi para decrementar el stack pointer y sw para guardar el valor en memoria
-
-    los strings, se crea un array de bytes con la funcion stringToBytes, luego se guarda la direccion
-    de memoria en el stack, luego se guarda cada byte en la direccion de memoria que se guardo en el stack
-    y se incrementa la direccion de memoria, esto se hace para guardar el string en memoria
-
-    los booleanos, se guarda un 1 si es true y un 0 si es false, se usa li para cargar el valor en un registro
-    luego se usa push que este tiene addi para decrementar el stack pointer y sw para guardar el valor en memoria
-
-    basicamente se guarda el valor en un registro, se guarda en el stack y se guarda en memoria, y en el stack (el array de objetos) 
-    se guarda el tipo, la longitud y la profundidad del objeto
+    y guardar el objeto en el stack de objetos, para poder hacer un seguimiento de los objetos
+    manejandolos segun su tipo y tomando su valor del stack
     */
     pushConstant(object) {
         let length = 0;
 
-        switch (object.type) {
+        switch (object.tipo) {
             case 'int':
-                this.li(reg.T0, object.value);
+                this.li(reg.T0, object.valor);
                 this.push();
                 length = 4;
                 break;
 
             case 'string':
-                const stringArray = stringToBytes(object.value);
+                const stringArray = stringToBytes(object.valor);
                 this.push(reg.HP); // Save the address of the string
                 stringArray.forEach(byte => {
                     this.li(reg.T0, byte);
@@ -392,22 +378,28 @@ export class Generator {
                 length = 4;
                 break
             case 'boolean': // si es true se guarda un 1 y si es false se guarda un 0
-                this.li(reg.T0, object.value ? 1 : 0);
+                console.log(object.valor);
+                this.comment(`Pushing boolean with li T0, ${object.valor ? 1 : 0}`);
+                let valor = object.valor ? 1 : 0;
+                this.li(reg.T0, valor);
                 this.push();
                 length = 4;
                 break;
             default:
                 break;
         }
-        this.pushObject({ type: object.type, length, depth: this.depth });
+        // se guarda el objeto en el stack de objetos
+        this.pushObject({ type: object.tipo, length, depth: this.depth });
     }
 
+    // Solo guarda el objecto en el stack para manejar segun su tipo
     pushObject(object) {
-        this.stack.push(object);
+        this.objectStack.push(object);
     }
 
+    // saca el objeto del stack de objetos y segun su tipo saca el valor del stack
     popObject(rd = reg.T0) {
-        const object = this.stack.pop();
+        const object = this.objectStack.pop();
 
         switch (object.type) {
             case 'int':
@@ -431,10 +423,10 @@ export class Generator {
     finishScope() {
         let byteOffset = 0;
 
-        for (let i = this.stack.length - 1; i >= 0; i--) {
-            if (this.stack[i].depth === this.depth) {
-                byteOffset += this.stack[i].length;
-                this.stack.pop();
+        for (let i = this.objectStack.length - 1; i >= 0; i--) {
+            if (this.objectStack[i].depth === this.depth) {
+                byteOffset += this.objectStack[i].length;
+                this.objectStack.pop();
             } else {
                 break;
             }
@@ -445,16 +437,16 @@ export class Generator {
     }
 
     tagObject(id) {
-        this.stack[this.stack.length - 1].id = id
+        this.objectStack[this.objectStack.length - 1].id = id
     }
 
     getObject(id) {
         let byteOffset = 0;
         for (let i = this.objectStack.length - 1; i >= 0; i--) {
-            if (this.stack[i].id === id) {
-                return [byteOffset, this.stack[i]];
+            if (this.objectStack[i].id === id) {
+                return [byteOffset, this.objectStack[i]];
             }
-            byteOffset += this.stack[i].length;
+            byteOffset += this.objectStack[i].length;
         }
         throw new Error(`Object with id ${id} not found`);
     }
