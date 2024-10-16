@@ -174,6 +174,19 @@ export class Generator {
         this.instructions.push(new Instruction('blt', rs1, rs2, offset));
     }
 
+    /* 
+    branch less than o blt
+    si rs1 es menor o igual que rs2 se salta a la instruccion especificada por offset
+    lo mismo que beq pero asi:
+    if(rs1 <= rs2) {
+        offset();
+    }
+    */  
+    bgt(rs1, rs2, offset) {
+        this.instructions.push(new Instruction('bgt', rs1, rs2, offset));
+    }
+
+
     /*
     branch greater than o bgt
     si rs1 es mayor que rs2 se salta a la instruccion especificada por offset
@@ -380,7 +393,7 @@ export class Generator {
             case 'boolean': // si es true se guarda un 1 y si es false se guarda un 0
                 console.log(object.valor);
                 this.comment(`Pushing boolean with li T0, ${object.valor ? 1 : 0}`);
-                let valor = object.valor ? 1 : 0;
+                let valor = object.valor ? 1 : "0";
                 this.li(reg.T0, valor);
                 this.push();
                 length = 4;
