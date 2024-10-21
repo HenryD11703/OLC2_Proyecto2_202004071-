@@ -12,7 +12,7 @@ export class CompilerVisitor extends BaseVisitor {
      * @type {BaseVisitor['visitStatement']}
      */
     visitStatement(node) {
-        node.exp.accept(this);  
+        node.exp.accept(this);
         this.code.popObject(reg.T0);
     }
 
@@ -64,7 +64,7 @@ export class CompilerVisitor extends BaseVisitor {
             const endLabel = this.code.getLabel();
 
             this.code.bne(reg.T0, "0", trueLabel); // si es verdadero ir a la etiqueta trueLabel
-            
+
             node.der.accept(this); // interpretar la expresion derecha
             this.code.popObject(reg.T0); // obtener el valor de la expresion derecha
 
@@ -156,7 +156,76 @@ export class CompilerVisitor extends BaseVisitor {
             return;
         }
 
+        if (node.op === '>') {
+            node.izq.accept(this);
+            node.der.accept(this);
 
+            this.code.pop(reg.T1);
+            this.code.pop(reg.T0);
+
+            const trueLabel = this.code.getLabel();
+            const endLabel = this.code.getLabel();
+
+            this.code.bgt(reg.T0, reg.T1, trueLabel);
+
+            this.code.li(reg.T0, "0");
+            this.code.j(endLabel);
+
+            this.code.addLabel(trueLabel);
+            this.code.li(reg.T0, "1");
+
+            this.code.addLabel(endLabel);
+            this.code.push(reg.T0);
+            this.code.pushObject({ tipo: 'boolean', length: 4 });
+            return;
+        }
+
+        if (node.op === '<=') {
+            node.izq.accept(this);
+            node.der.accept(this);
+
+            this.code.pop(reg.T1);
+            this.code.pop(reg.T0);
+
+            const trueLabel = this.code.getLabel();
+            const endLabel = this.code.getLabel();
+
+            this.code.ble(reg.T0, reg.T1, trueLabel);
+
+            this.code.li(reg.T0, "0");
+            this.code.j(endLabel);
+
+            this.code.addLabel(trueLabel);
+            this.code.li(reg.T0, "1");
+
+            this.code.addLabel(endLabel);
+            this.code.push(reg.T0);
+            this.code.pushObject({ tipo: 'boolean', length: 4 });
+            return;
+        }
+
+        if (node.op === '>=') {
+            node.izq.accept(this);
+            node.der.accept(this);
+
+            this.code.pop(reg.T1);
+            this.code.pop(reg.T0);
+
+            const trueLabel = this.code.getLabel();
+            const endLabel = this.code.getLabel();
+
+            this.code.bge(reg.T0, reg.T1, trueLabel);
+
+            this.code.li(reg.T0, "0");
+            this.code.j(endLabel);
+
+            this.code.addLabel(trueLabel);
+            this.code.li(reg.T0, "1");
+
+            this.code.addLabel(endLabel);
+            this.code.push(reg.T0);
+            this.code.pushObject({ tipo: 'boolean', length: 4 });
+        }
 
         this.code.comment(`Operacion ${node.op}`);
         node.izq.accept(this);
@@ -194,8 +263,8 @@ export class CompilerVisitor extends BaseVisitor {
         this.code.comment(`Operacion ${node.op}`);
         this.code.comment(`Tipo ${node.tipo}`);
 
-        
-        
+
+
         node.exp.accept(this);
         this.code.pop(reg.T0);
         switch (node.op) {
@@ -231,8 +300,12 @@ export class CompilerVisitor extends BaseVisitor {
      * @type {BaseVisitor['visitPrint']}
      */
     visitPrint(node) {
+
+        this.code.comment(`Print`);
+
         node.args.forEach(arg => {
             arg.accept(this);
+            this.code.comment(`Print ${arg.tipo}`);
             this.code.pop(reg.A0);
             this.code.printInt(reg.A0);
         });

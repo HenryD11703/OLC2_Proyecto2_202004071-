@@ -10,6 +10,12 @@ class Instruction {
         this.rs2 = rs2;
     }
 
+    // toString() {
+    //     const operandos = []
+    //     if (this.rd !== undefined) operandos.push(this.rd)
+    //     if (this.rs1 !== undefined) operandos.push(this.rs1)
+    //     if (this.rs2 !== undefined) operandos.push(this.rs2)
+    //     return `${this.instruccion} ${operandos.join(', ')}`
     toString() {
         const operands = []; 
         if (this.rd) operands.push(this.rd);
@@ -37,8 +43,6 @@ export class Generator {
         this.instructions.push(new Instruction(`${label}:`));
         return label;
     }
-
-
 
     add(rd, rs1, rs2) { // sumar dos registros, que ya esten en el stack
         this.instructions.push(new Instruction('add', rd, rs1, rs2));
@@ -228,6 +232,8 @@ export class Generator {
         this.sw(rd, reg.SP);
     }
 
+
+
     /*
         Esta funcion carga un objeto del stack y disminuye la profundidad
         lo suma por que se esta sacando un objeto de 32 bits y el stack crece hacia abajo
@@ -380,12 +386,38 @@ export class Generator {
                 length = 4;
                 break;
 
+                // case 'string':
+                //     const stringArray = stringTo1ByteArray(object.valor);
+    
+                //     this.comment(`Pushing string ${object.valor}`);
+                //     // this.addi(r.T0, r.HP, 4);
+                //     // this.push(r.T0);
+                //     this.push(r.HP);
+    
+                //     stringArray.forEach((charCode) => {
+                //         this.li(r.T0, charCode);
+                //         // this.push(r.T0);
+                //         // this.addi(r.HP, r.HP, 4);
+                //         // this.sw(r.T0, r.HP);
+    
+                //         this.sb(r.T0, r.HP);
+                //         this.addi(r.HP, r.HP, 1);
+                //     });
+    
+                //     length = 4;
+                //     break;
+
             case 'string':
+                console.log(object.valor);
                 const stringArray = stringToBytes(object.valor);
                 this.push(reg.HP); // Save the address of the string
+                console.log(stringArray);
                 stringArray.forEach(byte => {
-                    this.li(reg.T0, byte);
+                    this.li(reg.T0, `${byte}`);
+                    this.comment(`Holaaaaa ${byte}`);
                     this.sb(reg.T0, reg.HP);
+                    this.comment(`Holaaaaa ${reg.T0} ${reg.HP}`);
+                    this.comment(`ACA DA ERROR`);
                     this.addi(reg.HP, reg.HP, 1);
                 });
                 length = 4;
@@ -406,8 +438,17 @@ export class Generator {
     }
 
     // Solo guarda el objecto en el stack para manejar segun su tipo
+    // pushObject(object) {
+    //     this.objectStack.push({
+    //         ...object,
+    //         depth: this.depth,
+    //     });
+    // }
     pushObject(object) {
-        this.objectStack.push(object);
+        this.objectStack.push({
+            ...object,
+            depth: this.depth,
+        });
     }
 
     // saca el objeto del stack de objetos y segun su tipo saca el valor del stack
@@ -475,6 +516,6 @@ export class Generator {
             .map(instruction => `    ${instruction.toString()}`)
             .join('\n');
 
-        return `.text\n\nmain:\n${instructionsText}\n`;
+        return `.data\nheap:\n.text\n#Iniciar el HP\n   la ${reg.HP}, heap\n\nmain:\n${instructionsText}\n`;
     }
 }

@@ -279,6 +279,8 @@ OperacionComparar = izq:OperacionRelacional expansion:( _ op:("!=" / "==") _ der
     izq
   )
 }   
+
+// 12 > 5 || 5 < 3 && 3 == 3
 // Es importante que cuando se crean las ER o palabras reservadas se hagan en orden
 // asi como >= tiene que ir antes que > para que no reconozca primero el > y haga ya su match con la expresion
 OperacionRelacional = izq:Operacion expansion:( _ op:("<=" / ">=" / ">" / "<") _ der:Operacion {return { tipo:op, der}})* {
@@ -291,6 +293,7 @@ OperacionRelacional = izq:Operacion expansion:( _ op:("<=" / ">=" / ">" / "<") _
     izq
   )
 }   
+
 
 Operacion = izq:OperacionM expansion:( _ op:("+" / "-") _ der:OperacionM {return { tipo:op, der}})* {
   // Asociatividad de izq a der

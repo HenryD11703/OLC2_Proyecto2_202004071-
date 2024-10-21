@@ -25,14 +25,14 @@ export const stringArray = (string) => { // String to 32 bit array
     return result;
 }
 
-export const stringToBytes = (string) => { // String to 1 byte array
-    const result = [];
-    let elementIndex = 0;
+export const stringToBytes = (str) => { // String to 1 byte array
+    const resultado = []
+    let elementIndex = 0
 
-    while (elementIndex < string.length) {
-        result.push(string.charCodeAt(elementIndex));
-        elementIndex++;
+    while (elementIndex < str.length) {
+        resultado.push(str.charCodeAt(elementIndex))
+        elementIndex++
     }
-    result.push(0); // Null terminated string
-    return result;
+    resultado.push(0)
+    return resultado;
 }
