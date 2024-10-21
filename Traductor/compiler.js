@@ -1,4 +1,5 @@
 import { registers as reg } from "../RISC/constantes.js";
+import { floatRegisters as freg } from "../RISC/constantes.js";
 import { Generator } from "../RISC/generador.js";
 import { BaseVisitor } from "./visitor.js";
 
@@ -84,176 +85,211 @@ export class CompilerVisitor extends BaseVisitor {
         // Para las operaciones comparativas
         // se hara lo mismo, comparar valores, tener labels y segun si el registro es 1 o 0 ir hacia estos labels
 
-        if (node.op === '==') {
-            node.izq.accept(this);
-            node.der.accept(this);
+        // if (node.op === '==') {
+        //     node.izq.accept(this);
+        //     node.der.accept(this);
 
-            this.code.pop(reg.T1);
-            this.code.pop(reg.T0);
+        //     this.code.pop(reg.T1);
+        //     this.code.pop(reg.T0);
 
-            const trueLabel = this.code.getLabel();
-            const endLabel = this.code.getLabel();
+        //     const trueLabel = this.code.getLabel();
+        //     const endLabel = this.code.getLabel();
 
-            this.code.beq(reg.T0, reg.T1, trueLabel);
+        //     this.code.beq(reg.T0, reg.T1, trueLabel);
 
-            this.code.li(reg.T0, "0");
-            this.code.j(endLabel);
+        //     this.code.li(reg.T0, "0");
+        //     this.code.j(endLabel);
 
-            this.code.addLabel(trueLabel);
-            this.code.li(reg.T0, "1");
+        //     this.code.addLabel(trueLabel);
+        //     this.code.li(reg.T0, "1");
 
-            this.code.addLabel(endLabel);
-            this.code.push(reg.T0);
-            this.code.pushObject({ tipo: 'boolean', length: 4 });
-            return;
-        }
+        //     this.code.addLabel(endLabel);
+        //     this.code.push(reg.T0);
+        //     this.code.pushObject({ tipo: 'boolean', length: 4 });
+        //     return;
+        // }
 
-        if (node.op === '!=') {
-            node.izq.accept(this);
-            node.der.accept(this);
+        // if (node.op === '!=') {
+        //     node.izq.accept(this);
+        //     node.der.accept(this);
 
-            this.code.pop(reg.T1);
-            this.code.pop(reg.T0);
+        //     this.code.pop(reg.T1);
+        //     this.code.pop(reg.T0);
 
-            const trueLabel = this.code.getLabel();
-            const endLabel = this.code.getLabel();
+        //     const trueLabel = this.code.getLabel();
+        //     const endLabel = this.code.getLabel();
 
-            this.code.bne(reg.T0, reg.T1, trueLabel);
+        //     this.code.bne(reg.T0, reg.T1, trueLabel);
 
-            this.code.li(reg.T0, "0");
-            this.code.j(endLabel);
+        //     this.code.li(reg.T0, "0");
+        //     this.code.j(endLabel);
 
-            this.code.addLabel(trueLabel);
-            this.code.li(reg.T0, "1");
+        //     this.code.addLabel(trueLabel);
+        //     this.code.li(reg.T0, "1");
 
-            this.code.addLabel(endLabel);
-            this.code.push(reg.T0);
-            this.code.pushObject({ tipo: 'boolean', length: 4 });
-            return;
-        }
+        //     this.code.addLabel(endLabel);
+        //     this.code.push(reg.T0);
+        //     this.code.pushObject({ tipo: 'boolean', length: 4 });
+        //     return;
+        // }
 
-        if (node.op === '<') {
-            node.izq.accept(this);
-            node.der.accept(this);
+        // if (node.op === '<') {
+        //     node.izq.accept(this);
+        //     node.der.accept(this);
 
-            this.code.pop(reg.T1);
-            this.code.pop(reg.T0);
+        //     this.code.pop(reg.T1);
+        //     this.code.pop(reg.T0);
 
-            const trueLabel = this.code.getLabel();
-            const endLabel = this.code.getLabel();
+        //     const trueLabel = this.code.getLabel();
+        //     const endLabel = this.code.getLabel();
 
-            this.code.blt(reg.T0, reg.T1, trueLabel);
+        //     this.code.blt(reg.T0, reg.T1, trueLabel);
 
-            this.code.li(reg.T0, "0");
-            this.code.j(endLabel);
+        //     this.code.li(reg.T0, "0");
+        //     this.code.j(endLabel);
 
-            this.code.addLabel(trueLabel);
-            this.code.li(reg.T0, "1");
+        //     this.code.addLabel(trueLabel);
+        //     this.code.li(reg.T0, "1");
 
-            this.code.addLabel(endLabel);
-            this.code.push(reg.T0);
-            this.code.pushObject({ tipo: 'boolean', length: 4 });
-            return;
-        }
+        //     this.code.addLabel(endLabel);
+        //     this.code.push(reg.T0);
+        //     this.code.pushObject({ tipo: 'boolean', length: 4 });
+        //     return;
+        // }
 
-        if (node.op === '>') {
-            node.izq.accept(this);
-            node.der.accept(this);
+        // if (node.op === '>') {
+        //     node.izq.accept(this);
+        //     node.der.accept(this);
 
-            this.code.pop(reg.T1);
-            this.code.pop(reg.T0);
+        //     this.code.pop(reg.T1);
+        //     this.code.pop(reg.T0);
 
-            const trueLabel = this.code.getLabel();
-            const endLabel = this.code.getLabel();
+        //     const trueLabel = this.code.getLabel();
+        //     const endLabel = this.code.getLabel();
 
-            this.code.bgt(reg.T0, reg.T1, trueLabel);
+        //     this.code.bgt(reg.T0, reg.T1, trueLabel);
 
-            this.code.li(reg.T0, "0");
-            this.code.j(endLabel);
+        //     this.code.li(reg.T0, "0");
+        //     this.code.j(endLabel);
 
-            this.code.addLabel(trueLabel);
-            this.code.li(reg.T0, "1");
+        //     this.code.addLabel(trueLabel);
+        //     this.code.li(reg.T0, "1");
 
-            this.code.addLabel(endLabel);
-            this.code.push(reg.T0);
-            this.code.pushObject({ tipo: 'boolean', length: 4 });
-            return;
-        }
+        //     this.code.addLabel(endLabel);
+        //     this.code.push(reg.T0);
+        //     this.code.pushObject({ tipo: 'boolean', length: 4 });
+        //     return;
+        // }
 
-        if (node.op === '<=') {
-            node.izq.accept(this);
-            node.der.accept(this);
+        // if (node.op === '<=') {
+        //     node.izq.accept(this);
+        //     node.der.accept(this);
 
-            this.code.pop(reg.T1);
-            this.code.pop(reg.T0);
+        //     this.code.pop(reg.T1);
+        //     this.code.pop(reg.T0);
 
-            const trueLabel = this.code.getLabel();
-            const endLabel = this.code.getLabel();
+        //     const trueLabel = this.code.getLabel();
+        //     const endLabel = this.code.getLabel();
 
-            this.code.ble(reg.T0, reg.T1, trueLabel);
+        //     this.code.ble(reg.T0, reg.T1, trueLabel);
 
-            this.code.li(reg.T0, "0");
-            this.code.j(endLabel);
+        //     this.code.li(reg.T0, "0");
+        //     this.code.j(endLabel);
 
-            this.code.addLabel(trueLabel);
-            this.code.li(reg.T0, "1");
+        //     this.code.addLabel(trueLabel);
+        //     this.code.li(reg.T0, "1");
 
-            this.code.addLabel(endLabel);
-            this.code.push(reg.T0);
-            this.code.pushObject({ tipo: 'boolean', length: 4 });
-            return;
-        }
+        //     this.code.addLabel(endLabel);
+        //     this.code.push(reg.T0);
+        //     this.code.pushObject({ tipo: 'boolean', length: 4 });
+        //     return;
+        // }
 
-        if (node.op === '>=') {
-            node.izq.accept(this);
-            node.der.accept(this);
+        // if (node.op === '>=') {
+        //     node.izq.accept(this);
+        //     node.der.accept(this);
 
-            this.code.pop(reg.T1);
-            this.code.pop(reg.T0);
+        //     this.code.pop(reg.T1);
+        //     this.code.pop(reg.T0);
 
-            const trueLabel = this.code.getLabel();
-            const endLabel = this.code.getLabel();
+        //     const trueLabel = this.code.getLabel();
+        //     const endLabel = this.code.getLabel();
 
-            this.code.bge(reg.T0, reg.T1, trueLabel);
+        //     this.code.bge(reg.T0, reg.T1, trueLabel);
 
-            this.code.li(reg.T0, "0");
-            this.code.j(endLabel);
+        //     this.code.li(reg.T0, "0");
+        //     this.code.j(endLabel);
 
-            this.code.addLabel(trueLabel);
-            this.code.li(reg.T0, "1");
+        //     this.code.addLabel(trueLabel);
+        //     this.code.li(reg.T0, "1");
 
-            this.code.addLabel(endLabel);
-            this.code.push(reg.T0);
-            this.code.pushObject({ tipo: 'boolean', length: 4 });
-        }
+        //     this.code.addLabel(endLabel);
+        //     this.code.push(reg.T0);
+        //     this.code.pushObject({ tipo: 'boolean', length: 4 });
+        // }
 
         this.code.comment(`Operacion ${node.op}`);
         node.izq.accept(this);
         node.der.accept(this);
-        this.code.pop(reg.T0);
-        this.code.pop(reg.T1);
+
+        const derFloat = this.code.getTopObject().tipo === 'float';
+        const der = this.code.popObject(derFloat ? reg.FT1 : reg.T0);
+        const izqFloat = this.code.getTopObject().tipo === 'float';
+        const izq = this.code.popObject(izqFloat ? reg.FT0 : reg.T1);
+
+        if (izq.tipo === 'string' && der.tipo === 'string') {
+            this.code.add(reg.A0, reg.ZERO, reg.T1);
+            this.code.add(reg.A1, reg.ZERO, reg.T0);
+            this.code.callBuiltin('concatString');
+            this.code.pushObject({ type: 'string', length: 4 });
+            return;
+        }
+
+        if (izqFloat || derFloat) {
+            if(!izqFloat) this.code.fcvtsw(freg.FT1, reg.T1);
+            if(!derFloat) this.code.fcvtsw(freg.FT0, reg.T0);
+            switch (node.op) {
+                case '+':
+                    this.code.fadd(reg.T0, reg.T0, reg.T1);
+                    break;
+                case '-':
+                    this.code.fsub(reg.T0, reg.T1, reg.T0);
+                    break;
+                case '*':
+                    this.code.fmul(reg.T0, reg.T0, reg.T1);
+                    break;
+                case '/':
+                    this.code.fdiv(reg.T0, reg.T1, reg.T0);
+                    break;
+            }
+            this.code.pushFloat(freg.FT0);
+            this.code.pushObject({ type: 'float', length: 4 });
+            return;
+        }
+
         switch (node.op) {
             case '+':
-                this.code.add(reg.T0, reg.T0, reg.T1);
-                this.code.push(reg.T0);
-                break;
-            case '-':
-                this.code.sub(reg.T0, reg.T1, reg.T0);
-                this.code.push(reg.T0);
-                break;
-            case '*':
-                this.code.mul(reg.T0, reg.T0, reg.T1);
-                this.code.push(reg.T0);
-                break;
-            case '/':
-                this.code.div(reg.T0, reg.T1, reg.T0);
-                this.code.push(reg.T0);
-                break;
-            case '%':
-                this.code.rem(reg.T0, reg.T1, reg.T0);
-                this.code.push(reg.T0);
-                break;
-        }
+                this.code.add(reg.T0, reg.T0, reg.T1);                
+                this.code.push(reg.T0);                
+                break;            
+                case '-':                
+                this.code.sub(reg.T0, reg.T1, reg.T0);                
+                this.code.push(reg.T0);                
+                break;            
+                case '*':                
+                this.code.mul(reg.T0, reg.T0, reg.T1);                
+                this.code.push(reg.T0);                
+                break;            
+                case '/':                
+                this.code.div(reg.T0, reg.T1, reg.T0);                
+                this.code.push(reg.T0);                
+                break;            
+                case '%':                
+                this.code.rem(reg.T0, reg.T1, reg.T0);                
+                this.code.push(reg.T0);                
+                break;        
+            }    
+        this.code.pushObject({ type: 'int', length: 4 });
     }
 
     /**

@@ -36,3 +36,13 @@ export const stringToBytes = (str) => { // String to 1 byte array
     resultado.push(0)
     return resultado;
 }
+
+export const numberToFloatingPoint = (number) => { // Number to 32 bit array
+    const buffer = new ArrayBuffer(4);
+    const float32 = new Float32Array(buffer);
+    float32[0] = number;
+    const uint32 = new Uint32Array(buffer);
+    const integer = uint32[0];
+    const hexRepresentation = integer.toString(16);
+    return '0x' + hexRepresentation;
+}

@@ -1,6 +1,6 @@
 
 import { registers as reg } from "./constantes.js";
-import { stringArray, stringToBytes } from "./utils.js";
+import { numberToFloatingPoint, stringArray, stringToBytes } from "./utils.js";
 
 class Instruction {
     constructor(instruction, rd, rs1, rs2) {
@@ -62,6 +62,47 @@ export class Generator {
 
     rem(rd, rs1, rs2) { // residuo de la division de dos registros, que ya esten en el stack
         this.instructions.push(new Instruction('rem', rd, rs1, rs2));
+    }
+
+    fadd(rd, rs1, rs2) { // sumar dos registros, que ya esten en el stack, para floats
+        this.instructions.push(new Instruction('fadd.s', rd, rs1, rs2));
+    }
+
+    fsub(rd, rs1, rs2) { // restar dos registros, que ya esten en el stack, para floats
+        this.instructions.push(new Instruction('fsub.s', rd, rs1, rs2));
+    }
+
+    fmul(rd, rs1, rs2) { // multiplicar dos registros, que ya esten en el stack, para floats
+        this.instructions.push(new Instruction('fmul.s', rd, rs1, rs2));
+    }
+
+    fdiv(rd, rs1, rs2) { // dividir dos registros, que ya esten en el stack, para floats
+        this.instructions.push(new Instruction('fdiv.s', rd, rs1, rs2));
+    }
+
+    fli(rd, imm) { // cargar una constante en un registro, para floats
+        this.instructions.push(new Instruction('fli.s', rd, imm));
+    }
+
+    fmv(rd, rs1) { // copiar el valor de un registro en otro, para floats
+        this.instructions.push(new Instruction('fmv.s', rd, rs1));
+    }
+
+    flw(rd, rs1, imm = 0) { // cargar un valor de la memoria en un registro, para floats
+        this.instructions.push(new Instruction('flw', rd, `${imm}(${rs1})`));
+    }
+
+    fsw(rs1, rs2, imm = 0) { // guardar un valor de un registro en la memoria, para floats
+        this.instructions.push(new Instruction('fsw', rs1, `${imm}(${rs2})`));
+    }
+
+    fcvtsw(rd, rs1) { // convertir un entero a float, para floats
+        this.instructions.push(new Instruction('fcvt.s.w', rd, rs1));
+    }
+
+    printFloat() { // imprimir un float en pantalla
+        this.li(reg.A7, 2);
+        this.ecall();
     }
 
     /*
@@ -367,6 +408,8 @@ export class Generator {
         this.ecall();
     }
 
+
+
     comment(text) {
         this.instructions.push(new Instruction(`# ${text}`));
     }
@@ -376,6 +419,13 @@ export class Generator {
     y guardar el objeto en el stack de objetos, para poder hacer un seguimiento de los objetos
     manejandolos segun su tipo y tomando su valor del stack
     */
+
+    pushFloat(rd = reg.F0) {
+        this.addi(reg.SP, reg.SP, -4);
+        this.fsw(reg.F0, reg.SP);
+
+    }
+
     pushConstant(object) {
         let length = 0;
 
@@ -385,27 +435,6 @@ export class Generator {
                 this.push();
                 length = 4;
                 break;
-
-                // case 'string':
-                //     const stringArray = stringTo1ByteArray(object.valor);
-    
-                //     this.comment(`Pushing string ${object.valor}`);
-                //     // this.addi(r.T0, r.HP, 4);
-                //     // this.push(r.T0);
-                //     this.push(r.HP);
-    
-                //     stringArray.forEach((charCode) => {
-                //         this.li(r.T0, charCode);
-                //         // this.push(r.T0);
-                //         // this.addi(r.HP, r.HP, 4);
-                //         // this.sw(r.T0, r.HP);
-    
-                //         this.sb(r.T0, r.HP);
-                //         this.addi(r.HP, r.HP, 1);
-                //     });
-    
-                //     length = 4;
-                //     break;
 
             case 'string':
                 console.log(object.valor);
@@ -429,6 +458,11 @@ export class Generator {
                 this.li(reg.T0, valor);
                 this.push();
                 length = 4;
+                break;
+            case 'float':
+                const ieee754 = numberToFloatingPoint(object.valor);
+                this.li(reg.T0, ieee754);
+                this.push(reg.T0);
                 break;
             default:
                 break;
@@ -465,9 +499,16 @@ export class Generator {
             case 'boolean':
                 this.pop(rd);
                 break;
+            case 'float':
+                this.pop(rd);
+                break;
             default:
                 break;
         }
+    }
+
+    getTopObject() {
+        return this.objectStack[this.objectStack.length - 1];
     }
 
     createScope() {
@@ -518,4 +559,5 @@ export class Generator {
 
         return `.data\nheap:\n.text\n#Iniciar el HP\n   la ${reg.HP}, heap\n\nmain:\n${instructionsText}\n`;
     }
+
 }
