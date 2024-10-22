@@ -1,6 +1,8 @@
 
 import { registers as reg } from "./constantes.js";
+import { floatRegisters as freg } from "./constantes.js";
 import { numberToFloatingPoint, stringArray, stringToBytes } from "./utils.js";
+import { builtfuncs } from "./buitlfuncs.js";
 
 class Instruction {
     constructor(instruction, rd, rs1, rs2) {
@@ -93,7 +95,7 @@ export class Generator {
     }
 
     fsw(rs1, rs2, imm = 0) { // guardar un valor de un registro en la memoria, para floats
-        this.instructions.push(new Instruction('fsw', rs1, `${imm}(${rs2})`));
+        this.instructions.push(new Instruction('fsw', `${rs1}`, `${imm}(${rs2})`));
     }
 
     fcvtsw(rd, rs1) { // convertir un entero a float, para floats
@@ -358,6 +360,12 @@ export class Generator {
     }
 
     callBuiltInFunction(name) {
+        if (!builtfuncs[name]) {
+            throw new Error(`Built-in function ${name} not found`);
+        }
+
+        this._builtInFunctions.add(name);
+        this.jal(name);
     }
 
     /*
@@ -420,9 +428,9 @@ export class Generator {
     manejandolos segun su tipo y tomando su valor del stack
     */
 
-    pushFloat(rd = reg.FT0) {
+    pushFloat(rd = freg.FT0) {
         this.addi(reg.SP, reg.SP, -4);
-        this.fsw(reg.FT0, reg.SP);
+        this.fsw(freg.FT0, reg.SP);
 
     }
 
@@ -465,7 +473,7 @@ export class Generator {
                 break;
         }
         // se guarda el objeto en el stack de objetos
-        this.pushObject({ type: object.tipo, length, depth: this.depth });
+        this.pushObject({ tipo: object.tipo, length, depth: this.depth });
     }
 
     // Solo guarda el objecto en el stack para manejar segun su tipo
@@ -486,7 +494,7 @@ export class Generator {
     popObject(rd = reg.T0) {
         const object = this.objectStack.pop();
 
-        switch (object.type) {
+        switch (object.tipo) {
             case 'int':
                 this.pop(rd);
                 break;
@@ -552,13 +560,16 @@ export class Generator {
     toString() {
         this.endProgram();
         
-        Array.from(this._builtInFunctions).forEach(builtInFunction => {
-            this.callBuiltInFunction(builtInFunction);
-        });
 
         const instructionsText = this.instructions
             .map(instruction => `    ${instruction.toString()}`)
             .join('\n');
+
+        Array.from(this._builtInFunctions).forEach(builtInFunction => {
+            this.addLabel(builtInFunction);
+            builtfuncs[builtInFunction](this);
+            this.ret();
+        });
 
         return `.data\nheap:\n.text\n#Iniciar el HP\n   la ${reg.HP}, heap\n\nmain:\n${instructionsText}\n`;
     }
