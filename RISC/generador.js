@@ -420,9 +420,9 @@ export class Generator {
     manejandolos segun su tipo y tomando su valor del stack
     */
 
-    pushFloat(rd = reg.F0) {
+    pushFloat(rd = reg.FT0) {
         this.addi(reg.SP, reg.SP, -4);
-        this.fsw(reg.F0, reg.SP);
+        this.fsw(reg.FT0, reg.SP);
 
     }
 
@@ -443,10 +443,7 @@ export class Generator {
                 console.log(stringArray);
                 stringArray.forEach(byte => {
                     this.li(reg.T0, `${byte}`);
-                    this.comment(`Holaaaaa ${byte}`);
                     this.sb(reg.T0, reg.HP);
-                    this.comment(`Holaaaaa ${reg.T0} ${reg.HP}`);
-                    this.comment(`ACA DA ERROR`);
                     this.addi(reg.HP, reg.HP, 1);
                 });
                 length = 4;
@@ -500,11 +497,17 @@ export class Generator {
                 this.pop(rd);
                 break;
             case 'float':
-                this.pop(rd);
+                this.popFloat(rd);
                 break;
             default:
                 break;
         }
+        return object;
+    }
+
+    popFloat(rd = reg.FT0) {
+        this.flw(rd, reg.SP);
+        this.addi(reg.SP, reg.SP, 4);
     }
 
     getTopObject() {

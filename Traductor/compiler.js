@@ -22,15 +22,17 @@ export class CompilerVisitor extends BaseVisitor {
      */
     visitNativo(node) {
         this.code.comment(`Nativo ${node.valor}`);
-        this.code.comment(`Tipo ${node.tipo}`);
-        // a la hora de hacer el push constant siempre se manejara el objeto con tipo y valor
-        this.code.pushConstant({ tipo: node.tipo, valor: node.valor });
+        this.code.comment(`type ${node.tipo}`);
+        // a la hora de hacer el push constant siempre se manejara el objeto con type y valor
+        this.code.pushConstant({ type: node.tipo, valor: node.valor });
     }
 
     /**
      * @type {BaseVisitor['visitOperacionBinaria']}
      */
     visitOperacionBinaria(node) {
+        this.code.comment(`Operacion ${node.op}`);
+
 
         if (node.op === '&&') {
             node.izq.accept(this); // interpretar la expresion izquierda
@@ -53,7 +55,7 @@ export class CompilerVisitor extends BaseVisitor {
             this.code.li(reg.T0, "0"); // si llega hasta aqui es falso
             this.code.push(reg.T0); // push 0 en el stack
             this.code.addLabel(endLabel); // agregar la etiqueta endLabel
-            this.code.pushObject({ tipo: 'boolen', length: 4 }); // push el objeto booleano en el stack
+            this.code.pushObject({ type: 'boolean', length: 4 }); // push el objeto booleano en el stack
             return;
         }
 
@@ -78,7 +80,7 @@ export class CompilerVisitor extends BaseVisitor {
             this.code.li(reg.T0, 1); // si llega hasta aqui es verdadero
             this.code.push(reg.T0); // push 1 en el stack
             this.code.addLabel(endLabel); // agregar la etiqueta endLabel
-            this.code.pushObject({ tipo: 'boolen', length: 4 }); // push el objeto booleano en el stack
+            this.code.pushObject({ type: 'boolean', length: 4 }); // push el objeto booleano en el stack
             return;
         }
 
@@ -105,7 +107,7 @@ export class CompilerVisitor extends BaseVisitor {
 
         //     this.code.addLabel(endLabel);
         //     this.code.push(reg.T0);
-        //     this.code.pushObject({ tipo: 'boolean', length: 4 });
+        //     this.code.pushObject({ type: 'boolean', length: 4 });
         //     return;
         // }
 
@@ -129,7 +131,7 @@ export class CompilerVisitor extends BaseVisitor {
 
         //     this.code.addLabel(endLabel);
         //     this.code.push(reg.T0);
-        //     this.code.pushObject({ tipo: 'boolean', length: 4 });
+        //     this.code.pushObject({ type: 'boolean', length: 4 });
         //     return;
         // }
 
@@ -153,7 +155,7 @@ export class CompilerVisitor extends BaseVisitor {
 
         //     this.code.addLabel(endLabel);
         //     this.code.push(reg.T0);
-        //     this.code.pushObject({ tipo: 'boolean', length: 4 });
+        //     this.code.pushObject({ type: 'boolean', length: 4 });
         //     return;
         // }
 
@@ -177,7 +179,7 @@ export class CompilerVisitor extends BaseVisitor {
 
         //     this.code.addLabel(endLabel);
         //     this.code.push(reg.T0);
-        //     this.code.pushObject({ tipo: 'boolean', length: 4 });
+        //     this.code.pushObject({ type: 'boolean', length: 4 });
         //     return;
         // }
 
@@ -201,7 +203,7 @@ export class CompilerVisitor extends BaseVisitor {
 
         //     this.code.addLabel(endLabel);
         //     this.code.push(reg.T0);
-        //     this.code.pushObject({ tipo: 'boolean', length: 4 });
+        //     this.code.pushObject({ type: 'boolean', length: 4 });
         //     return;
         // }
 
@@ -225,19 +227,18 @@ export class CompilerVisitor extends BaseVisitor {
 
         //     this.code.addLabel(endLabel);
         //     this.code.push(reg.T0);
-        //     this.code.pushObject({ tipo: 'boolean', length: 4 });
+        //     this.code.pushObject({ type: 'boolean', length: 4 });
         // }
 
-        this.code.comment(`Operacion ${node.op}`);
         node.izq.accept(this);
         node.der.accept(this);
 
-        const derFloat = this.code.getTopObject().tipo === 'float';
+        const derFloat = this.code.getTopObject().type === 'float';
         const der = this.code.popObject(derFloat ? reg.FT1 : reg.T0);
-        const izqFloat = this.code.getTopObject().tipo === 'float';
+        const izqFloat = this.code.getTopObject().type === 'float';
         const izq = this.code.popObject(izqFloat ? reg.FT0 : reg.T1);
 
-        if (izq.tipo === 'string' && der.tipo === 'string') {
+        if (izq.type === 'string' && der.type === 'string') {
             this.code.add(reg.A0, reg.ZERO, reg.T1);
             this.code.add(reg.A1, reg.ZERO, reg.T0);
             this.code.callBuiltin('concatString');
@@ -297,7 +298,7 @@ export class CompilerVisitor extends BaseVisitor {
      */
     visitOperacionUnaria(node) {
         this.code.comment(`Operacion ${node.op}`);
-        this.code.comment(`Tipo ${node.tipo}`);
+        this.code.comment(`type ${node.type}`);
 
 
 
@@ -308,7 +309,7 @@ export class CompilerVisitor extends BaseVisitor {
                 this.code.li(reg.T1, "0");
                 this.code.sub(reg.T0, reg.T1, reg.T0);
                 this.code.push(reg.T0);
-                this.code.pushObject({ tipo: 'int', length: 4 });
+                this.code.pushObject({ type: 'int', length: 4 });
                 break;
             case '!':
                 const trueLabel = this.code.getLabel();
@@ -320,7 +321,7 @@ export class CompilerVisitor extends BaseVisitor {
                 this.code.li(reg.T0, 1);
                 this.code.addLabel(endLabel);
                 this.code.push(reg.T0);
-                this.code.pushObject({ tipo: 'boolean', length: 4 });
+                this.code.pushObject({ type: 'boolean', length: 4 });
                 break;
         }
     }
@@ -336,14 +337,25 @@ export class CompilerVisitor extends BaseVisitor {
      * @type {BaseVisitor['visitPrint']}
      */
     visitPrint(node) {
-
-        this.code.comment(`Print`);
-
-        node.args.forEach(arg => {
+        node.args.forEach((arg, index) => {
             arg.accept(this);
-            this.code.comment(`Print ${arg.tipo}`);
-            this.code.pop(reg.A0);
-            this.code.printInt(reg.A0);
+            
+            
+            const type = this.code.getTopObject().type;
+            console.log(type);
+            const isFloat = this.code.getTopObject().type === 'float';
+            console.log(isFloat);
+            const object = this.code.popObject(isFloat? freg.FA0 : reg.A0);
+
+            console.log(object);
+
+            const PrintType = {
+                'int': () => this.code.printInt(),
+                'string': () => this.code.printString(),
+                'float': () => this.code.printFloat(),
+            }
+
+            PrintType[object.type]();
         });
     }
 }

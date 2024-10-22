@@ -33,6 +33,7 @@ export const registers = {
     HP: 't6'
 }
 
+
 export const floatRegisters = {
     FT0: 'ft0',
     FT1: 'ft1',
