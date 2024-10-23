@@ -374,7 +374,7 @@ export class CompilerVisitor extends BaseVisitor {
         }
 
         this.code.tagObject(node.id);
-        this.code.popObject
+        this.code.popObject(reg.T0);
     }
 
     /**
@@ -385,13 +385,12 @@ export class CompilerVisitor extends BaseVisitor {
 
         node.valor.accept(this);
 
-        const valueObject = this.code.popObject(reg.T0);
-
         if(this.insideFunction) {
             // hacer funcionamiento cuando ya esten las funciones
         }
 
         this.code.tagObject(node.id);
+        this.code.popObject(reg.T0);
 
         
     }
