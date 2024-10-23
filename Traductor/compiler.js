@@ -340,11 +340,10 @@ export class CompilerVisitor extends BaseVisitor {
      * @type {BaseVisitor['visitPrint']}
      */
     visitPrint(node) {
-        node.args.forEach((arg, index) => {
+        node.args.forEach((arg) => {
             arg.accept(this);
             
             
-            const type = this.code.getTopObject().tipo;
             const isFloat = this.code.getTopObject().tipo === 'float';
             console.log(isFloat);
             const object = this.code.popObject(isFloat? freg.FA0 : reg.A0);
@@ -358,7 +357,8 @@ export class CompilerVisitor extends BaseVisitor {
 
             PrintType[object.tipo]();
 
-            this.code.printLineJump();
+            this.code.printNewLine();
+
         });
     }
 
@@ -375,6 +375,25 @@ export class CompilerVisitor extends BaseVisitor {
 
         this.code.tagObject(node.id);
         this.code.popObject
+    }
+
+    /**
+     * @type {BaseVisitor['visitDeclaracionSinTipo']}
+     */
+    visitDeclaracionSinTipo(node) {
+        this.code.comment(`Declaracion de variable sin tipo ${node.id}`);
+
+        node.valor.accept(this);
+
+        const valueObject = this.code.popObject(reg.T0);
+
+        if(this.insideFunction) {
+            // hacer funcionamiento cuando ya esten las funciones
+        }
+
+        this.code.tagObject(node.id);
+
+        
     }
 
     /**

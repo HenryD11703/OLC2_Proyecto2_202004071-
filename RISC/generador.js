@@ -11,13 +11,6 @@ class Instruction {
         this.rs1 = rs1;
         this.rs2 = rs2;
     }
-
-    // toString() {
-    //     const operandos = []
-    //     if (this.rd !== undefined) operandos.push(this.rd)
-    //     if (this.rs1 !== undefined) operandos.push(this.rs1)
-    //     if (this.rs2 !== undefined) operandos.push(this.rs2)
-    //     return `${this.instruccion} ${operandos.join(', ')}`
     toString() {
         const operands = []; 
         if (this.rd) operands.push(this.rd);
@@ -112,8 +105,8 @@ export class Generator {
         this.ecall();
     }
 
-    printLineJump() { // salto de linea para el print
-        this.li(reg.A7, 10);
+    printNewLine() { // imprimir un salto de linea en pantalla
+        this.li(reg.A7, 12);
         this.ecall();
     }
 
@@ -440,7 +433,7 @@ export class Generator {
 
     pushFloat(rd = freg.FT0) {
         this.addi(reg.SP, reg.SP, -4);
-        this.fsw(freg.FT0, reg.SP);
+        this.fsw(rd, reg.SP);
 
     }
 
@@ -478,6 +471,7 @@ export class Generator {
                 const ieee754 = numberToFloatingPoint(object.valor);
                 this.li(reg.T0, ieee754);
                 this.push(reg.T0);
+                length = 4;
                 break;
             case 'char':
                 this.li(reg.T0, object.valor.charCodeAt(0));
