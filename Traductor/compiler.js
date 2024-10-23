@@ -7,6 +7,8 @@ export class CompilerVisitor extends BaseVisitor {
     constructor() {
         super();
         this.code = new Generator();
+
+        this.insideFunction = false;
     }
 
     /**
@@ -238,7 +240,8 @@ export class CompilerVisitor extends BaseVisitor {
         const izqFloat = this.code.getTopObject().tipo === 'float';
         const izq = this.code.popObject(izqFloat ? freg.FT1 : reg.T1);
 
-        if (izq.tipo === 'string' && der.type === 'string') {
+        if (izq.tipo === 'string' && der.tipo === 'string') {
+            this.code.comment("Concatenar dos strings");
             this.code.add(reg.A0, reg.ZERO, reg.T1);
             this.code.add(reg.A1, reg.ZERO, reg.T0);
             this.code.callBuiltInFunction('concatStrings');
@@ -350,9 +353,45 @@ export class CompilerVisitor extends BaseVisitor {
                 'int': () => this.code.printInt(),
                 'string': () => this.code.printString(),
                 'float': () => this.code.printFloat(),
+                'char': () => this.code.printChar(),
             }
 
             PrintType[object.tipo]();
+
+            this.code.printLineJump();
         });
+    }
+
+    /**
+     * @type {BaseVisitor['visitDeclaracionVariable']}
+     */
+    visitDeclaracionVariable(node) {
+        this.code.comment(`Declaracion de variable ${node.id}`);
+        node.valor.accept(this);
+
+        if(this.insideFunction) {
+            // hacer funcionamiento cuando ya esten las funciones
+        }
+
+        this.code.tagObject(node.id);
+        this.code.popObject
+    }
+
+    /**
+     * @type {BaseVisitor['visitReferenciaVariable']}
+     */
+    visitReferenciaVariable(node) {
+        this.code.comment(`Referencia a variable ${node.id}`);
+        const [offset, variableObject] = this.code.getObject(node.id);
+
+        if(this.insideFunction) {
+            // hacer funcionamiento cuando ya esten las funciones
+        }
+
+        this.code.addi(reg.T0, reg.SP, `${offset}`);
+        this.code.lw(reg.T1, reg.T0);
+        this.code.push(reg.T1);
+        this.code.pushObject({...variableObject, id: undefined});
+
     }
 }
