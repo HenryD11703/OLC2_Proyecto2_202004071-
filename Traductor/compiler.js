@@ -374,7 +374,6 @@ export class CompilerVisitor extends BaseVisitor {
         }
 
         this.code.tagObject(node.id);
-        this.code.popObject(reg.T0);
     }
 
     /**
@@ -390,7 +389,6 @@ export class CompilerVisitor extends BaseVisitor {
         }
 
         this.code.tagObject(node.id);
-        this.code.popObject(reg.T0);
 
         
     }
