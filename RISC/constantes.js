@@ -8,6 +8,7 @@ export const registers = {
     T1: 't1',
     T2: 't2',
     S0_FP: 's0/fp',
+    FP: 's0',
     S1: 's1',
     A0: 'a0',
     A1: 'a1',

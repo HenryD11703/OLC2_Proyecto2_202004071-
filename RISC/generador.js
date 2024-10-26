@@ -58,9 +58,12 @@ export class Generator {
     rem(rd, rs1, rs2) { // residuo de la division de dos registros, que ya esten en el stack
         this.instructions.push(new Instruction('rem', rd, rs1, rs2));
     }
-
     fadd(rd, rs1, rs2) { // sumar dos registros, que ya esten en el stack, para floats
         this.instructions.push(new Instruction('fadd.s', rd, rs1, rs2));
+    }
+    
+    fneg(rd, rs1) { // negar un registro, que ya este en el stack, para floats
+        this.instructions.push(new Instruction('fneg.s', rd, rs1));
     }
 
     fsub(rd, rs1, rs2) { // restar dos registros, que ya esten en el stack, para floats
@@ -105,8 +108,14 @@ export class Generator {
         this.ecall();
     }
 
+    printBoolean() { // imprimir un booleano en pantalla
+        this.li(reg.A7, 8);
+        this.ecall();
+    }
+
     printNewLine() { // imprimir un salto de linea en pantalla
-        this.li(reg.A7, 12);
+        this.li(reg.A0, 10);  // 10 es el código ASCII para el salto de línea ('\n')
+        this.li(reg.A7, 11);  // 11 es el código de syscall para imprimir un carácter
         this.ecall();
     }
 
@@ -263,8 +272,27 @@ export class Generator {
     se traduce a
     addi t0, zero, 5
     */
+
+    // comparativas para floats
+
+    feq(rd, rs1, rs2) {
+        this.instructions.push(new Instruction('feq.s', rd, rs1, rs2));
+    }
+
+    fle(rd, rs1, rs2) {
+        this.instructions.push(new Instruction('fle.s', rd, rs1, rs2));
+    }
+
+    flt(rd, rs1, rs2) {
+        this.instructions.push(new Instruction('flt.s', rd, rs1, rs2));
+    }
+
     li(rd, imm) {
         this.instructions.push(new Instruction('li', rd, imm));
+    }
+
+    xori(rd, rs1, imm) {
+        this.instructions.push(new Instruction('xori', rd, rs1, imm));
     }
 
     /*
@@ -442,16 +470,15 @@ export class Generator {
 
         switch (object.tipo) {
             case 'int':
-                this.li(reg.T0, object.valor);
+
+                this.li(reg.T0, `${object.valor}`);
                 this.push();
                 length = 4;
                 break;
 
             case 'string':
-                console.log(object.valor);
                 const stringArray = stringToBytes(object.valor);
                 this.push(reg.HP); // Save the address of the string
-                console.log(stringArray);
                 stringArray.forEach(byte => {
                     this.li(reg.T0, `${byte}`);
                     this.sb(reg.T0, reg.HP);
@@ -460,7 +487,6 @@ export class Generator {
                 length = 4;
                 break
             case 'boolean': // si es true se guarda un 1 y si es false se guarda un 0
-                console.log(object.valor);
                 this.comment(`Pushing boolean with li T0, ${object.valor ? 1 : 0}`);
                 let valor = object.valor ? 1 : "0";
                 this.li(reg.T0, valor);
@@ -494,6 +520,7 @@ export class Generator {
     //     });
     // }
     pushObject(object) {
+        this.comment(`----- Entro a pushObject ${JSON.stringify(object)}`);
         this.objectStack.push({
             ...object,
             depth: this.depth,
@@ -526,7 +553,8 @@ export class Generator {
         return object;
     }
 
-    popFloat(rd = reg.FT0) {
+    popFloat(rd = freg.FT0) {
+        this.comment(`----- Entro a popFloat ${rd}`);
         this.flw(rd, reg.SP);
         this.addi(reg.SP, reg.SP, 4);
     }
@@ -568,6 +596,11 @@ export class Generator {
             byteOffset += this.objectStack[i].length;
         }
         throw new Error(`Object with id ${id} not found`);
+    }
+
+    getFrameLocalObject(index) {
+        const frameRelativeLocalObject = this.objectStack.filter(object => object.tipo === 'local');
+        return frameRelativeLocalObject[index];
     }
 
     toString() {
