@@ -308,7 +308,6 @@ export class CompilerVisitor extends BaseVisitor {
         node.valor.accept(this);
         if(this.insideFunction) {
             const localObject = this.code.getFrameLocal(this.frameDclIndex);
-            console.log('localObject', localObject);
             const valueObject = this.code.popObject(reg.T0);
 
             this.code.addi(reg.T1, reg.FP, -localObject.offset * 4);
@@ -353,10 +352,9 @@ export class CompilerVisitor extends BaseVisitor {
      * @type {BaseVisitor['visitReferenciaVariable']}
      */
     visitReferenciaVariable(node) {
-        this.code.comment(`Referencia a variable ${node.id}`);
         const [offset, variableObject] = this.code.getObject(node.id);
         if(this.insideFunction) {
-            this.code.addi(reg.T0, reg.FP, -variableObject.offset * 4);
+            this.code.addi(reg.T1, reg.FP, -variableObject.offset * 4);
             this.code.lw(reg.T0, reg.T1);
             this.code.push(reg.T0);
             this.code.pushObject({...variableObject, id: undefined});
@@ -375,38 +373,32 @@ export class CompilerVisitor extends BaseVisitor {
         node.exp.accept(this);
         const isFloat = this.code.getTopObject().tipo === 'float';
 
-        console.log('isFloat', isFloat);
-
-        const regd = isFloat? freg.FA0 : reg.A0;
-
-        this.code.comment(`ENTRANDO A POPOBJECT CON EL REGISTRO ${regd}`);
-
-        console.log('reg', regd);
+        const regd = isFloat? freg.FT0 : reg.T0;
 
         const valueObject = this.code.popObject(`${regd}`);
         const [offset, variableObject] = this.code.getObject(node.id);
     
         if(this.insideFunction) {
             this.code.addi(reg.T1, reg.FP, -variableObject.offset * 4);
-            this.code.sw(reg.A0, reg.T1);
+            this.code.sw(reg.T0, reg.T1);
             return;
         }
 
         if(isFloat) {
             this.code.addi(reg.T1, reg.SP, `${offset}`);
-            this.code.fsw(freg.FA0, reg.T1);
+            this.code.fsw(freg.FT0, reg.T1);
         } else {
             this.code.addi(reg.T1, reg.SP, `${offset}`);
-            this.code.sw(reg.A0, reg.T1);
+            this.code.sw(reg.T0, reg.T1);
         }
 
         variableObject.tipo = valueObject.tipo;
 
         if (isFloat) {
-            this.code.pushFloat(freg.FA0);
+            this.code.pushFloat(freg.FT0);
 
         } else {
-            this.code.push(reg.A0);
+            this.code.push(reg.T0);
         }
         this.code.pushObject(valueObject);
     }
@@ -672,15 +664,15 @@ export class CompilerVisitor extends BaseVisitor {
         node.params.forEach((param, index) => {
             const paramId = param.id || param.id2;
             const paramTipo = param.tipo || param.tipo2;
+
             this.code.pushObject({
                 id: paramId,
-                type: paramTipo,
+                tipo: paramTipo,
                 length: 4,
                 offset: baseSize + index
             })
         });
 
-        console.log('Local Frame:', localFrame)
         localFrame.forEach(variableLocal => {
             this.code.pushObject({
                 ...variableLocal,
@@ -692,13 +684,16 @@ export class CompilerVisitor extends BaseVisitor {
         this.insideFunction = node.id;
         this.frameDclIndex = 0;
         this.returnLabel = this.code.getLabel();
+
         this.code.addLabel(node.id);
 
         node.bloque.accept(this);
+
         this.code.addLabel(this.returnLabel);
         
         this.code.add(reg.T0, reg.ZERO, reg.FP);
         this.code.lw(reg.RA, reg.T0);
+        this.code.jalr(reg.ZERO, reg.RA, "0");
             
 
         // limpiar metadatos de la función
@@ -723,6 +718,7 @@ export class CompilerVisitor extends BaseVisitor {
         if(!(node.callee instanceof ReferenciaVariable)) return;
 
         const functionName = node.callee.id;
+        
 
         const embebidas = {
             parseInt: () => {
@@ -731,12 +727,30 @@ export class CompilerVisitor extends BaseVisitor {
                 this.code.callBuiltInFunction("parseInt");
                 this.code.pushObject({ tipo: 'int', length: 4 });
             },
-            parseFloat: () => {
+            parsefloat: () => {
                 node.args[0].accept(this);
                 this.code.popObject(reg.A0);
                 this.code.callBuiltInFunction("parseFloat");
                 this.code.pushObject({ tipo: 'float', length: 4 });
             },
+            toLowerCase: () => {
+                node.args[0].accept(this);
+                this.code.popObject(reg.A0);
+                this.code.callBuiltInFunction("toLowerCase");
+                this.code.pushObject({ tipo: 'string', length: 4 });
+            },
+            toUpperCase: () => {
+                node.args[0].accept(this);
+                this.code.popObject(reg.A0);
+                this.code.callBuiltInFunction("toUpperCase");
+                this.code.pushObject({ tipo: 'string', length: 4 });
+            },
+            toString: () => {
+                node.args[0].accept(this);
+                this.code.popObject(reg.A0);
+                this.code.callBuiltInFunction("toString");
+                this.code.pushObject({ tipo: 'string', length: 4 });
+            }
         }
 
         if(embebidas[functionName]) {
@@ -752,9 +766,15 @@ export class CompilerVisitor extends BaseVisitor {
         });
 
         this.code.addi(reg.SP, reg.SP, 4 * (node.args.length + 2));
+
+        // guardar el frame pointer en t1
         this.code.addi(reg.T1, reg.SP, -4);
+
+        // guardar el return address en t0
         this.code.la(reg.T0, returnLabel);
         this.code.push(reg.T0);
+
+        // guardar el frame pointer en el stack
         this.code.push(reg.FP);
         this.code.addi(reg.FP, reg.T1, "0");
 

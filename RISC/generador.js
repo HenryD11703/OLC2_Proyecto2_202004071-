@@ -475,7 +475,6 @@ export class Generator {
 
         switch (object.tipo) {
             case 'int':
-
                 this.li(reg.T0, `${object.valor}`);
                 this.push();
                 length = 4;
@@ -492,10 +491,9 @@ export class Generator {
                 length = 4;
                 break
             case 'boolean': // si es true se guarda un 1 y si es false se guarda un 0
-                this.comment(`Pushing boolean with li T0, ${object.valor ? 1 : 0}`);
                 let valor = object.valor ? 1 : "0";
                 this.li(reg.T0, valor);
-                this.push();
+                this.push(reg.T0);
                 length = 4;
                 break;
             case 'float':
@@ -509,7 +507,6 @@ export class Generator {
                 this.push();
                 length = 4;
                 break;
-            case 'object':
             default:
                 break;
         }
@@ -609,6 +606,17 @@ export class Generator {
 
     jalr(rd, rs1, inm) {
         this.instructions.push(new Instruction('jalr', rd, rs1, inm));
+    }
+
+    printTexto(texto) {
+        const stringArray = stringToBytes(texto);
+        stringArray.pop(); // Remove the null character
+        
+        stringArray.forEach(byte => {
+            this.li(reg.A0, byte);
+            this.printChar();
+            this.comment(`Printing character: ${byte}`);
+        });
     }
 
     toString() {
