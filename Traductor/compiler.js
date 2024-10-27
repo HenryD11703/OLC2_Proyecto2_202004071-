@@ -2,7 +2,8 @@ import { registers as reg } from "../RISC/constantes.js";
 import { floatRegisters as freg } from "../RISC/constantes.js";
 import { Generator } from "../RISC/generador.js";
 import { BaseVisitor } from "./visitor.js";
-import { Frame } from "./frame.js";
+import { FrameVisitor } from "./frame.js";
+import { ReferenciaVariable } from "./nodos.js";
 
 export class CompilerVisitor extends BaseVisitor {
     constructor() {
@@ -38,9 +39,6 @@ export class CompilerVisitor extends BaseVisitor {
      * @type {BaseVisitor['visitNativo']}
      */
     visitNativo(node) {
-        this.code.comment(`Nativo ${node.valor}`);
-        this.code.comment(`type ${node.tipo}`);
-        // a la hora de hacer el push constant siempre se manejara el objeto con type y valor
         this.code.pushConstant({ tipo: node.tipo, valor: node.valor });
     }
 
@@ -307,11 +305,10 @@ export class CompilerVisitor extends BaseVisitor {
      * @type {BaseVisitor['visitDeclaracionVariable']}
      */
     visitDeclaracionVariable(node) {
-        this.code.comment(`Declaracion de variable ${node.id}`);
         node.valor.accept(this);
-
         if(this.insideFunction) {
-            const localObject = this.code.getFrameLocalObject(this.frameDclIndex);
+            const localObject = this.code.getFrameLocal(this.frameDclIndex);
+            console.log('localObject', localObject);
             const valueObject = this.code.popObject(reg.T0);
 
             this.code.addi(reg.T1, reg.FP, -localObject.offset * 4);
@@ -335,7 +332,7 @@ export class CompilerVisitor extends BaseVisitor {
         node.valor.accept(this);
 
         if(this.insideFunction) {
-            const localObject = this.code.getFrameLocalObject(this.frameDclIndex);
+            const localObject = this.code.getFrameLocal(this.frameDclIndex);
             const valueObject = this.code.popObject(reg.T0);
 
             this.code.addi(reg.T1, reg.FP, -localObject.offset * 4);
@@ -390,7 +387,9 @@ export class CompilerVisitor extends BaseVisitor {
         const [offset, variableObject] = this.code.getObject(node.id);
     
         if(this.insideFunction) {
-            // hacer funcionamiento cuando ya esten las funciones
+            this.code.addi(reg.T1, reg.FP, -variableObject.offset * 4);
+            this.code.sw(reg.A0, reg.T1);
+            return;
         }
 
         if(isFloat) {
@@ -632,6 +631,13 @@ export class CompilerVisitor extends BaseVisitor {
     visitReturn(node) {
         if(node.exp) {
             // suponer que el return con valor es solo dentro de una función
+            node.exp.accept(this);
+            this.code.popObject(reg.A0);
+
+            const frameSize = this.functionMetadata[this.insideFunction].frameSize;
+            const returnOffset = frameSize - 1;
+            this.code.addi(reg.T0, reg.FP, -returnOffset * 4);
+            this.code.sw(reg.A0, reg.T0);
         }
 
         this.code.j(this.returnLabel);
@@ -643,9 +649,133 @@ export class CompilerVisitor extends BaseVisitor {
     visitFuncion(node) {
         const baseSize = 2;
         const paramSize = node.params.length;
-        const frameVisitor = new Frame(baseSize + paramSize);
+        const frameVisitor = new FrameVisitor(baseSize + paramSize);
         node.bloque.accept(frameVisitor);
-        const localFrameSize = frameVisitor
-        const localSize = frameVisitor.localSize
+        const localFrame = frameVisitor.frame;
+        const localSize = localFrame.length;
+
+        const returnSize = 1;
+
+        const totalSize = baseSize + paramSize + localSize + returnSize;
+        
+        this.functionMetadata[node.id] = {
+            frameSize : totalSize,
+            returnType : node.tipo
+        }
+
+        const instruccionesMain = this.code.instructions;
+        const insideFunctionInstructions = []
+        this.code.instructions = insideFunctionInstructions;
+
+       
+
+        node.params.forEach((param, index) => {
+            const paramId = param.id || param.id2;
+            const paramTipo = param.tipo || param.tipo2;
+            this.code.pushObject({
+                id: paramId,
+                type: paramTipo,
+                length: 4,
+                offset: baseSize + index
+            })
+        });
+
+        console.log('Local Frame:', localFrame)
+        localFrame.forEach(variableLocal => {
+            this.code.pushObject({
+                ...variableLocal,
+                length: 4,
+                type: 'local',
+            })
+        });
+
+        this.insideFunction = node.id;
+        this.frameDclIndex = 0;
+        this.returnLabel = this.code.getLabel();
+        this.code.addLabel(node.id);
+
+        node.bloque.accept(this);
+        this.code.addLabel(this.returnLabel);
+        
+        this.code.add(reg.T0, reg.ZERO, reg.FP);
+        this.code.lw(reg.RA, reg.T0);
+            
+
+        // limpiar metadatos de la función
+
+        for (let i = 0; i < paramSize + localSize; i++) {
+            this.code.objectStack.pop();
+        }
+
+        this.code.instructions = instruccionesMain;
+
+        insideFunctionInstructions.forEach(instruction => {
+            this.code.instruccionesFuncion.push(instruction);
+        });
+
+        this.insideFunction = false;
     }
+
+    /**
+     * @type {BaseVisitor['visitLlamada']}
+     */
+    visitLlamada(node) {
+        if(!(node.callee instanceof ReferenciaVariable)) return;
+
+        const functionName = node.callee.id;
+
+        const embebidas = {
+            parseInt: () => {
+                node.args[0].accept(this);
+                this.code.popObject(reg.A0);
+                this.code.callBuiltInFunction("parseInt");
+                this.code.pushObject({ tipo: 'int', length: 4 });
+            },
+            parseFloat: () => {
+                node.args[0].accept(this);
+                this.code.popObject(reg.A0);
+                this.code.callBuiltInFunction("parseFloat");
+                this.code.pushObject({ tipo: 'float', length: 4 });
+            },
+        }
+
+        if(embebidas[functionName]) {
+            embebidas[functionName]();
+            return;
+        } // si no es embebida es una función foranea o no existe xd
+
+        const returnLabel = this.code.getLabel();
+
+        this.code.addi(reg.SP, reg.SP, -4 * 2);
+        node.args.forEach((arg) => {
+            arg.accept(this);
+        });
+
+        this.code.addi(reg.SP, reg.SP, 4 * (node.args.length + 2));
+        this.code.addi(reg.T1, reg.SP, -4);
+        this.code.la(reg.T0, returnLabel);
+        this.code.push(reg.T0);
+        this.code.push(reg.FP);
+        this.code.addi(reg.FP, reg.T1, "0");
+
+        const frameSize = this.functionMetadata[functionName].frameSize;
+        this.code.addi(reg.SP, reg.SP, -(frameSize - 2) * 4);
+
+        this.code.j(functionName);
+        this.code.addLabel(returnLabel);
+
+        const returnSize = frameSize - 1;
+        this.code.addi(reg.T0, reg.FP, -returnSize * 4);
+        this.code.lw(reg.A0, reg.T0);
+
+        this.code.addi(reg.T0, reg.FP, -4);
+        this.code.lw(reg.FP, reg.T0);
+
+        this.code.addi(reg.SP, reg.SP, frameSize * 4);
+
+        this.code.push(reg.A0);
+        this.code.pushObject({ tipo: this.functionMetadata[functionName].returnType, length: 4 });
+    }
+
+
 }

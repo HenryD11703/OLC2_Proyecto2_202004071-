@@ -1,11 +1,11 @@
-import { BaseVisitor } from "./visitor";
+import { BaseVisitor } from "./visitor.js";
 
-export class Frame extends BaseVisitor {
+export class FrameVisitor extends BaseVisitor {
 
     constructor(baseOffset) {
         super();
-        this.baseOffset = baseOffset;
         this.frame = [];
+        this.baseOffset = baseOffset;
         this.localSize = 0;
     }
 
@@ -20,10 +20,22 @@ export class Frame extends BaseVisitor {
             id: node.id,
             offset: this.baseOffset + this.localSize,
         });
+        this.localSize+= 1;
+    }
+    visitDeclaracionSimple(node) {
+        this.frame.push({
+            id: node.id,
+            offset: this.baseOffset + this.localSize,
+        });
         this.localSize++;
     }
-    visitDeclaracionSimple(node) {}
-    visitDeclaracionSinTipo(node) {}
+    visitDeclaracionSinTipo(node) {
+        this.frame.push({
+            id: node.id,
+            offset: this.baseOffset + this.localSize,
+        });
+        this.localSize++;
+    }
     visitReferenciaVariable(node) {}
     visitPrint(node) {}
     visitStatement(node) {}
@@ -33,7 +45,7 @@ export class Frame extends BaseVisitor {
      * @type {BaseVisitor['visitBloque']}
      */
     visitBloque(node) {
-
+        node.dcls.forEach(dcl => dcl.accept(this));
     }
     /**
      * @type {BaseVisitor['visitIf']}
