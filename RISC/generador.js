@@ -40,6 +40,10 @@ export class Generator {
         return label;
     }
 
+    mv(rd, rs1) { // copiar el valor de un registro en otro
+        this.instructions.push(new Instruction('mv', rd, rs1));
+    }
+
     add(rd, rs1, rs2) { // sumar dos registros, que ya esten en el stack
         this.instructions.push(new Instruction('add', rd, rs1, rs2));
     }

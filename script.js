@@ -1,4 +1,5 @@
 import { CompilerVisitor } from "./Traductor/compiler.js";
+import { InterpretarVisitor } from "./Interpreter/Interprete.js";
 import { parse } from "./Traductor/gramatica.js";
 
 
@@ -134,14 +135,20 @@ Interpretar.onclick = () => {
 
         
         
-        
-        const interprete = new CompilerVisitor();
+        const interprete = new InterpretarVisitor();
+        const traductor = new CompilerVisitor();
+
+        sentencias.forEach(sentencia => sentencia.accept(interprete));
 
         console.log({sentencias})
-        sentencias.forEach(sentencia => sentencia.accept(interprete))
+        sentencias.forEach(sentencia => sentencia.accept(traductor))
         
         
-        consoleEditor.setValue(interprete.code.toString());      
+        consoleEditor.setValue(traductor.code.toString());
+        
+        ast.innerHTML = interprete.tablaSimbolos.hacerHTML();
+
+        erores.innerHTML = interprete.errores.hacerHTML();
 
 
 

@@ -545,10 +545,84 @@ import { Generator } from "./generador.js";
         code.sb(reg.ZERO, reg.HP);
         code.addi(reg.HP, reg.HP, 1);
     }
-    
 
-
-
+    export const toString = (code) => {
+        code.comment("Convertir número a string");
+        
+        // Guardar en el stack la dirección donde comenzará el string
+        code.push(reg.HP);
+        
+        // Preparar registros para la conversión
+        code.add(reg.T0, reg.A0, reg.ZERO);  // Copiar el número a convertir
+        code.li(reg.T1, 10);                 // Base 10 para división
+        code.add(reg.T2, reg.HP, reg.ZERO);  // Guardar posición inicial del HP
+        
+        // Manejar caso especial: si el número es 0
+        const specialZero = code.getLabel();
+        const normalCase = code.getLabel();
+        
+        code.bne(reg.T0, reg.ZERO, normalCase);
+        code.li(reg.T3, 48);  // ASCII '0'
+        code.sb(reg.T3, reg.HP);
+        code.addi(reg.HP, reg.HP, 1);
+        code.sb(reg.ZERO, reg.HP);
+        code.addi(reg.HP, reg.HP, 1);
+        code.j(specialZero);
+        
+        // Proceso normal de conversión
+        code.addLabel(normalCase);
+        
+        // Manejar números negativos
+        const notNegative = code.getLabel();
+        code.bge(reg.T0, reg.ZERO, notNegative);
+        code.li(reg.T3, 45);  // ASCII '-'
+        code.sb(reg.T3, reg.HP);
+        code.addi(reg.HP, reg.HP, 1);
+        code.sub(reg.T0, reg.ZERO, reg.T0);  // Hacer positivo el número
+        code.addLabel(notNegative);
+        
+        // Convertir dígitos
+        const convertLoop = code.addLabel();
+        
+        // División entre 10 para obtener el último dígito
+        code.div(reg.T0, reg.T0, reg.T1);    // T0 = T0 / 10
+        code.rem(reg.T3, reg.T0, reg.T1);    // T3 = resto (último dígito)
+        code.addi(reg.T3, reg.T3, 48);       // Convertir a ASCII
+        code.sb(reg.T3, reg.HP);             // Guardar en el heap
+        code.addi(reg.HP, reg.HP, 1);
+        
+        code.bne(reg.T0, reg.ZERO, convertLoop);
+        
+        // Revertir el string (está al revés)
+        code.addi(reg.HP, reg.HP, -1);      // Retroceder uno para no incluir el último incremento
+        code.add(reg.T0, reg.T2, reg.ZERO); // T0 = inicio
+        code.add(reg.T1, reg.HP, reg.ZERO); // T1 = final
+        
+        const reverseLoop = code.getLabel();
+        const endReverse = code.getLabel();
+        
+        code.addLabel(reverseLoop);
+        code.bge(reg.T0, reg.T1, endReverse);
+        
+        // Intercambiar bytes
+        code.lb(reg.T3, reg.T0);
+        code.lb(reg.T4, reg.T1);
+        code.sb(reg.T4, reg.T0);
+        code.sb(reg.T3, reg.T1);
+        
+        code.addi(reg.T0, reg.T0, 1);
+        code.addi(reg.T1, reg.T1, -1);
+        code.j(reverseLoop);
+        
+        code.addLabel(endReverse);
+        
+        // Añadir terminador null
+        code.addi(reg.HP, reg.HP, 1);
+        code.sb(reg.ZERO, reg.HP);
+        code.addi(reg.HP, reg.HP, 1);
+        
+        code.addLabel(specialZero);
+    }  
 
 export const builtfuncs = {
     concatStrings,
@@ -569,5 +643,6 @@ export const builtfuncs = {
     parseInt,
     parseFloat,
     toLowerCase,
-    toUpperCase
+    toUpperCase,
+    toString
 }
